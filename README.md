@@ -9,6 +9,9 @@ ejecutar el ejecutable
 
 Nombre: Javier Moraga Sanhueza
 RUT:20.028.499-2
+nombre de los archivos que se puedan crear: 
+resultados.csv
+tablero.csv
 
 Comparación entre minimax con y sin poda alfa beta:
 Sin poda alfa beta el algoritmo es capaz de funcionar muy rapido hasta un maximo de 5 de profundidad
