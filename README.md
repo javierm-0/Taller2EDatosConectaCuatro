@@ -3,9 +3,13 @@ Segundo taller de Estructura de datos
 
 comandos para ejecutar
 crear el ejecutable
+
 g++ -o main main.cpp
+
 ejecutar el ejecutable
+
 ./main
+
 
 Nombre: Javier Moraga Sanhueza
 RUT:20.028.499-2
