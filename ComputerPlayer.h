@@ -9,7 +9,7 @@ class ComputerPlayer{
     public:
         ComputerPlayer();
         ~ComputerPlayer();
-        NodoConectaCuatro* miniMax(ConectaCuatro*,int,bool);
+        NodoConectaCuatro* miniMax(ConectaCuatro*,int,bool,string);
         NodoConectaCuatro* miniMaxPodaAlfaBeta(ConectaCuatro*,int,bool,int,int,string);
 };
 //constructor
@@ -19,7 +19,7 @@ ComputerPlayer::~ComputerPlayer(){}
 
 //WARNING: este metodo es sin poda alfa beta solo fue usado para comparar la eficiencia obtenida aplicando la poda alfa beta
 //Retorna el nodo que contiene el tablero y la columna elegida al recorrer el arbol de minimax
-NodoConectaCuatro* ComputerPlayer::miniMax(ConectaCuatro* estadoTablero,int profundidad, bool maximizar){
+NodoConectaCuatro* ComputerPlayer::miniMax(ConectaCuatro* estadoTablero,int profundidad, bool maximizar,string dificultad){
     int CPU = 2;//'2' representa las jugadas del CPU en el tablero
     int human = 1;//'1' representa las jugadas de la persona en el tablero
     
@@ -56,7 +56,20 @@ NodoConectaCuatro* ComputerPlayer::miniMax(ConectaCuatro* estadoTablero,int prof
             bool jugadaValida = estadoTablero->ingresarFicha(col,CPU);
             if(jugadaValida)
             {
-                int puntaje = miniMax(estadoTablero,profundidad-1,false)->nuevoTablero->calcularPuntajeHeuristicoDificultadImposible();
+                int puntaje = 0;
+                int bonificacionTurno = (estadoTablero->contarCasillasVacias()+1);//cuantas mas casillas vacias hayan, menos turnos habran ocurrido haciendo preferible a esta jugada
+                if(toupper(dificultad[0]) == 'E'){
+                    puntaje = miniMax(estadoTablero,profundidad-1,false,dificultad)->nuevoTablero->calcularPuntajeHeuristicoDificultadFacil()*bonificacionTurno;
+                }
+                else if(toupper(dificultad[0]) == 'M'){
+                    puntaje = miniMax(estadoTablero,profundidad-1,false,dificultad)->nuevoTablero->calcularPuntajeHeuristicoDificultadNormal()*bonificacionTurno;
+                }
+                else if(toupper(dificultad[0]) == 'H'){
+                    puntaje = miniMax(estadoTablero,profundidad-1,false,dificultad)->nuevoTablero->calcularPuntajeHeuristicoDificultadDificil()*bonificacionTurno;
+                }
+                else{//'I'
+                    puntaje = miniMax(estadoTablero,profundidad-1,false,dificultad)->nuevoTablero->calcularPuntajeHeuristicoDificultadImposible()*bonificacionTurno;
+                }
                 //cout<<"puntaje actual: "<<puntaje<<endl;
                 bool removeSuccess = estadoTablero->quitarFicha(col,CPU);
                 if(!removeSuccess){
@@ -79,28 +92,41 @@ NodoConectaCuatro* ComputerPlayer::miniMax(ConectaCuatro* estadoTablero,int prof
     else{
         //minimizar
         int columnaElegida = -1; int minimoPuntaje = 999999;
-        NodoConectaCuatro* peorTablero = NULL;
+        NodoConectaCuatro* peorTableroParaCPU = NULL;
         for(int col = 0; col < estadoTablero->columnas;col++)
         {
             bool jugadaValida = estadoTablero->ingresarFicha(col,human);
             if(jugadaValida){
-                int puntaje = miniMax(estadoTablero,profundidad-1,true)->nuevoTablero->calcularPuntajeHeuristicoDificultadImposible();
+                int bonificacionTurno = (estadoTablero->contarCasillasVacias()+1);//cuantas mas casillas vacias hayan, menos turnos habran ocurrido haciendo preferible a esta jugada
+                int puntaje = 0;
+                if(toupper(dificultad[0]) == 'E'){
+                    puntaje = miniMax(estadoTablero,profundidad-1,true,dificultad)->nuevoTablero->calcularPuntajeHeuristicoDificultadFacil()*bonificacionTurno;
+                }
+                else if(toupper(dificultad[0]) == 'M'){
+                    puntaje = miniMax(estadoTablero,profundidad-1,true,dificultad)->nuevoTablero->calcularPuntajeHeuristicoDificultadNormal()*bonificacionTurno;
+                }
+                else if(toupper(dificultad[0]) == 'H'){
+                    puntaje = miniMax(estadoTablero,profundidad-1,true,dificultad)->nuevoTablero->calcularPuntajeHeuristicoDificultadDificil()*bonificacionTurno;
+                }
+                else{//'I'
+                    puntaje = miniMax(estadoTablero,profundidad-1,true,dificultad)->nuevoTablero->calcularPuntajeHeuristicoDificultadImposible()*bonificacionTurno;
+                }
                 bool removeSuccess = estadoTablero->quitarFicha(col,human);
                 if(!removeSuccess){
                     std::cout<<"ERROR: por alguna razon no se pudo quitar la ficha que se puso en la linea 97"<<endl;
                 }
                 if(minimoPuntaje > puntaje){
                     minimoPuntaje = puntaje;
-                    if(peorTablero){
-                        peorTablero->~NodoConectaCuatro();
+                    if(peorTableroParaCPU){
+                        peorTableroParaCPU->~NodoConectaCuatro();
                     }
-                    peorTablero = new NodoConectaCuatro(estadoTablero);
-                    peorTablero->columnaElegida = col;
+                    peorTableroParaCPU = new NodoConectaCuatro(estadoTablero);
+                    peorTableroParaCPU->columnaElegida = col;
                 }
             }
 
         }
-        return peorTablero;
+        return peorTableroParaCPU;
     }
 }
 
@@ -188,10 +214,12 @@ NodoConectaCuatro* ComputerPlayer::miniMaxPodaAlfaBeta(ConectaCuatro* estadoTabl
                     
                 }
                 
-                if(alfa < maximoPuntaje){
+                if(alfa < maximoPuntaje){//alfa debera actualizarse con el valor mas alto posible
                     alfa = maximoPuntaje;
                 }
-                if(beta <= alfa){
+                if(alfa >= beta){
+                    //si alfa llega a ser mayor que beta, eso quiere decir que no sera considerado para el minimizador
+                    //puesto que ese numero llegara hasta beta, entonces se ejecuta la poda
                     break;
                 }
             }
@@ -201,7 +229,7 @@ NodoConectaCuatro* ComputerPlayer::miniMaxPodaAlfaBeta(ConectaCuatro* estadoTabl
     else{
         //minimizar
         int columnaElegida = -1; int minimoPuntaje = 999999;
-        NodoConectaCuatro* peorTablero = NULL;
+        NodoConectaCuatro* peorTableroParaCPU = NULL;//jugada del humano donde se elige la peor situacion posible para el CPU
         for(int col = 0; col < estadoTablero->columnas;col++)
         {
             bool jugadaValida = estadoTablero->ingresarFicha(col,human);
@@ -226,23 +254,26 @@ NodoConectaCuatro* ComputerPlayer::miniMaxPodaAlfaBeta(ConectaCuatro* estadoTabl
                 }
                 if(minimoPuntaje > puntaje){
                     minimoPuntaje = puntaje;
-                    if(peorTablero){
-                        peorTablero->~NodoConectaCuatro();
+                    if(peorTableroParaCPU){
+                        peorTableroParaCPU->~NodoConectaCuatro();
                     }
                     
-                    peorTablero = new NodoConectaCuatro(estadoTablero);
-                    peorTablero->columnaElegida = col;
+                    peorTableroParaCPU = new NodoConectaCuatro(estadoTablero);
+                    peorTableroParaCPU->columnaElegida = col;
                 }
                 if(beta > minimoPuntaje){
                     beta = minimoPuntaje;
                 }
 
                 if(beta <= alfa){
+                    //Para el minimizador
+                    //si beta llega a ser menor que alfa, eso quiere decir que se trata de un valor que el maximizador
+                    //no tomara, entonces se ejecuta la poda
                     break;
                 }
             }
 
         }
-        return peorTablero;
+        return peorTableroParaCPU;
     }
 }

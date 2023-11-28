@@ -46,7 +46,7 @@ void actualizarResultadoDelJuego(std::string resultadoMasReciente){
 
 //metodo encargado de correr hasta que se determine un ganador (o un empate)
 //o si se desea guardar partida, se llamara a otro metodo que creara el archivo .csv que contenga la matriz del tablero actual
-void jugarConectaCuatro(ConectaCuatro* conectaCuatro,ComputerPlayer* computador,std::string dificultad,bool p1Inicia){
+void jugarConectaCuatro(ConectaCuatro* conectaCuatro,ComputerPlayer* computador,std::string dificultad,bool p1Inicia,bool sinPoda){
     std::string resultadoDelJuego = "";
     int col;
     bool jugadaHecha = false;
@@ -89,7 +89,7 @@ void jugarConectaCuatro(ConectaCuatro* conectaCuatro,ComputerPlayer* computador,
                     std::cout<<conectaCuatro->verTableroConMejorFormato()<<std::endl;
                     if(jugadaHecha){
                         p1Inicia = false;
-                        std::cout<<"Tu jugada tiene un ptj de "<<puntajeTablero<<std::endl;
+                        //esta parte solo es para mostrar el ptj mas adelante
                         if(toupper(dificultad[0]) == 'E'){
                             puntajeTablero = conectaCuatro->calcularPuntajeHeuristicoDificultadFacil()*(conectaCuatro->contarCasillasVacias()+1);
                         }
@@ -102,10 +102,11 @@ void jugarConectaCuatro(ConectaCuatro* conectaCuatro,ComputerPlayer* computador,
                         else{
                             puntajeTablero = conectaCuatro->calcularPuntajeHeuristicoDificultadImposible()*(conectaCuatro->contarCasillasVacias()+1)*4;
                         }
+                        std::cout<<"Tu jugada tiene un ptj de "<<puntajeTablero<<std::endl;//mostrando ptj
                         if(conectaCuatro->existeGanador(player1)){
-                            std::cout<<"ptj total de "<<puntajeTablero<<" (este puntaje representa que tanto acerca al CPU a la victoria)"<<std::endl;
+                            std::cout<<"ptj total de "<<puntajeTablero<<" (este puntaje representa que tan cerca esta el CPU de la victoria)"<<std::endl;
                             
-                            resultadoDelJuego = "player1: WINS";
+                            resultadoDelJuego = "player1: WINS. ptj: "+to_string(puntajeTablero);
                             actualizarResultadoDelJuego(resultadoDelJuego);
                             std::cout<<resultadoDelJuego<<std::endl; return;
                         }
@@ -122,18 +123,6 @@ void jugarConectaCuatro(ConectaCuatro* conectaCuatro,ComputerPlayer* computador,
 
             }
         }
-        if(toupper(dificultad[0]) == 'E'){
-            puntajeTablero = conectaCuatro->calcularPuntajeHeuristicoDificultadFacil()*(conectaCuatro->contarCasillasVacias()+1);
-        }
-        else if(toupper(dificultad[0]) == 'M'){
-            puntajeTablero = conectaCuatro->calcularPuntajeHeuristicoDificultadNormal()*(conectaCuatro->contarCasillasVacias()+1)*2;
-        }
-        else if(toupper(dificultad[0]) == 'H'){
-            puntajeTablero = conectaCuatro->calcularPuntajeHeuristicoDificultadDificil()*(conectaCuatro->contarCasillasVacias()+1)*3;
-        }
-        else{
-            puntajeTablero = conectaCuatro->calcularPuntajeHeuristicoDificultadImposible()*(conectaCuatro->contarCasillasVacias()+1)*4;
-        }
         
 
         turno = 1+42-conectaCuatro->contarCasillasVacias();
@@ -145,20 +134,25 @@ void jugarConectaCuatro(ConectaCuatro* conectaCuatro,ComputerPlayer* computador,
             jugadaCPU->~NodoConectaCuatro();
         }
         int alfa = -999999; int beta = 999999;//valores iniciales para alfa y beta
+
+        if(sinPoda){
+            jugadaCPU = computador->miniMax(conectaCuatro,6,true,dificultad);
+        }
+        else{
+            jugadaCPU = computador->miniMaxPodaAlfaBeta(conectaCuatro,6,true,alfa,beta,dificultad);
+        }
+
+        //esta parte solo es para mostrar el ptj mas adelante
         if(toupper(dificultad[0]) == 'E'){
-            jugadaCPU = computador->miniMaxPodaAlfaBeta(conectaCuatro,3,true,alfa,beta,dificultad);
             puntajeTablero = conectaCuatro->calcularPuntajeHeuristicoDificultadFacil()*(conectaCuatro->contarCasillasVacias()+1);
         }
         else if(toupper(dificultad[0]) == 'M'){
-            jugadaCPU = computador->miniMaxPodaAlfaBeta(conectaCuatro,6,true,alfa,beta,dificultad);
             puntajeTablero = conectaCuatro->calcularPuntajeHeuristicoDificultadNormal()*(conectaCuatro->contarCasillasVacias()+1)*2;
         }
         else if(toupper(dificultad[0]) == 'H'){
-            jugadaCPU = computador->miniMaxPodaAlfaBeta(conectaCuatro,9,true,alfa,beta,dificultad);
             puntajeTablero = conectaCuatro->calcularPuntajeHeuristicoDificultadDificil()*(conectaCuatro->contarCasillasVacias()+1)*3;
         }
         else{
-            jugadaCPU = computador->miniMaxPodaAlfaBeta(conectaCuatro,11,true,alfa,beta,dificultad);
             puntajeTablero = conectaCuatro->calcularPuntajeHeuristicoDificultadImposible()*(conectaCuatro->contarCasillasVacias()+1)*4;
         }
         
@@ -167,15 +161,17 @@ void jugarConectaCuatro(ConectaCuatro* conectaCuatro,ComputerPlayer* computador,
         std::cout<<"CPU ha decidido usar la columna: "<<jugadaCPU->columnaElegida+1<<", PTJ: "<<puntajeTablero<<std::endl;
         std::cout<<"\n"<<std::endl;
         if(conectaCuatro->existeGanador(CPU)){
-            resultadoDelJuego = "CPU: WINS";
+            resultadoDelJuego = "CPU: WINS. ptj: "+to_string(puntajeTablero);
             actualizarResultadoDelJuego(resultadoDelJuego);
             std::cout<<resultadoDelJuego<<std::endl; 
             std::cout<<conectaCuatro->verTableroConMejorFormato()<<std::endl;
             return;
         }
         if(conectaCuatro->tableroLleno()){
+            resultadoDelJuego = "EMPATE. ptj: "+to_string(puntajeTablero);
+            actualizarResultadoDelJuego(resultadoDelJuego);
             std::cout<<"puntaje final: "<<puntajeTablero<<std::endl;
-            std::cout<<"EMPATE"<<std::endl; return;
+            std::cout<<resultadoDelJuego<<std::endl; return;
         }
         p1Inicia = true;
         std::cout<<"\n"<<std::endl;
@@ -210,7 +206,7 @@ void mostrarResultados(){
 //Se debe limpiar el tablero
 //se hace la llamada al metodo para limpiar el tablero, y se pide que ingrese la dificultad deseada
 //en un loop hasta que ingrese una respuesta valida o ingrese '-1' para retroceder al menu anterior
-void subMenu(ConectaCuatro* juego, ComputerPlayer* bot){
+void subMenu(ConectaCuatro* juego, ComputerPlayer* bot,bool sinPoda){
     std::string dificultad = ""; std::string repartirTurno = "";
     juego->limpiarTablero();
     while(!dificultadValida(dificultad)){
@@ -229,11 +225,11 @@ void subMenu(ConectaCuatro* juego, ComputerPlayer* bot){
                 std::cout<<"'-1' para volver al menu inicial"<<std::endl;
                 std::getline(std::cin,repartirTurno);
                 if(repartirTurno == "1"){
-                    jugarConectaCuatro(juego,bot,dificultad,true);//llama a la funcion para jugar con el jugador iniciando primero
+                    jugarConectaCuatro(juego,bot,dificultad,true,sinPoda);//llama a la funcion para jugar con el jugador iniciando primero
                     break;
                 }
                 else if(repartirTurno == "2"){
-                    jugarConectaCuatro(juego,bot,dificultad,false);//llama a la funcion para jugar con el CPU iniciando primero
+                    jugarConectaCuatro(juego,bot,dificultad,false,sinPoda);//llama a la funcion para jugar con el CPU iniciando primero
                     break;
                 }
                 else if(repartirTurno == "-1"){
@@ -252,14 +248,14 @@ void subMenu(ConectaCuatro* juego, ComputerPlayer* bot){
 
 //Se llama a esta funcion para iniciar la partida ya existente
 //por lo que no se pregunta por quien parte primero, dado que siempre se guarda en el turno del jugador
-void subMenu2(ConectaCuatro* juego, ComputerPlayer* bot){
+void subMenu2(ConectaCuatro* juego, ComputerPlayer* bot,bool sinPoda){
     std::string dificultad = "";
     while(!dificultadValida(dificultad)){
         std::cout<<"Ingrese dificultad del juego: 'E'(Easy) 'M'(Medium) 'H'(Hard) 'I'(Very Hard)"<<std::endl;
         std::getline(std::cin,dificultad);
         if(dificultad != "" && dificultadValida(dificultad)){
             std::cout<<"Ha elegido: "<<dificultad<<std::endl;
-            jugarConectaCuatro(juego,bot,dificultad,true);//llama a la funcion para jugar con el jugador iniciando primero
+            jugarConectaCuatro(juego,bot,dificultad,true,sinPoda);//llama a la funcion para jugar con el jugador iniciando primero
         }
         else{
             std::cout<<"ERROR: "<<dificultad<<" no es una dificultad valida"<<std::endl;
@@ -268,7 +264,7 @@ void subMenu2(ConectaCuatro* juego, ComputerPlayer* bot){
 }
 
 void menu(ConectaCuatro* juego, ComputerPlayer* bot){
-    bool invalidResp = true;
+    bool invalidResp = true; bool sinPoda = false;
     while(invalidResp){
         std::string menu = "==============================";
         std::cout<<menu<<std::endl;
@@ -276,20 +272,24 @@ void menu(ConectaCuatro* juego, ComputerPlayer* bot){
         std::cout<<"Ingrese '1' para jugar nueva partida"<<std::endl;
         std::cout<<"Ingrese '2' para continuar la partida en cualquier dificultad"<<std::endl;
         std::cout<<"Ingrese '3' para ver los resultados de partidas anteriores"<<std::endl;
+        std::cout<<"Ingrese '4' si desea no usar la poda para corroborar diferencias de optimizacion"<<std::endl;
         std::cout<<"Ingrese '-1' salir"<<std::endl;
+        if(sinPoda){
+            std::cout<<"Warning: poda alfa beta desactivada '5' para reactivarla"<<std::endl;
+        }
         std::cout<<menu<<std::endl;
         std::string opcion = "";
         getline(std::cin,opcion);
         if(opcion == "1"){
             std::cout<<"Nueva partida ha sido elegida"<<std::endl;
-            subMenu(juego,bot);
+            subMenu(juego,bot,sinPoda);
         }
         else if(opcion == "2"){
             std::ifstream arch("tablero.csv");
             if(arch.is_open()){
                 std::cout<<"cargando partida..."<<std::endl;
                 juego->cargarPartida();
-                subMenu2(juego,bot);
+                subMenu2(juego,bot,sinPoda);
             }
             else{
                 std::cout<<"No hay partidas guardadas o no se puede acceder al archivo"<<std::endl;
@@ -297,6 +297,14 @@ void menu(ConectaCuatro* juego, ComputerPlayer* bot){
         }
         else if(opcion == "3"){
             mostrarResultados();
+        }
+        else if(opcion == "4"){
+            sinPoda = true;
+            std::cout<<"desactivando la poda alfa beta..."<<std::endl;
+        }
+        else if(opcion == "5"){
+            sinPoda = false;
+            std::cout<<"reactivando la poda alfa beta..."<<std::endl;
         }
         else if(opcion == "-1"){
             std::cout<<"Cerrando todo"<<std::endl;
